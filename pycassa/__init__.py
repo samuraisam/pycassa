@@ -5,9 +5,6 @@ from pycassa.index import *
 from pycassa.pool import *
 from pycassa.connection import *
 from pycassa.system_manager import *
-
-from pycassa.cassandra.ttypes import ConsistencyLevel,\
-    InvalidRequestException, NotFoundException, UnavailableException,\
-    TimedOutException
-
+from pycassa.api_exceptions import *
 from pycassa.logging.pycassa_logger import *
+from pycassa.consistency_level import *

@@ -15,7 +15,7 @@ ROWS = {'1': {'a': '123', 'b':'123'},
 def setup_module():
     global pool, cf, scf
     credentials = {'username': 'jsmith', 'password': 'havebadpass'}
-    pool = ConnectionPool(keyspace='PycassaTestKeyspace', credentials=credentials)
+    pool = ConnectionPool(keyspace='PycassaTestKeyspace', credentials=credentials, framed_transport=False)
     cf = ColumnFamily(pool, 'Standard1')
     scf = ColumnFamily(pool, 'Super1')
 

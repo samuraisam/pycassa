@@ -1,6 +1,7 @@
 import unittest
+
 from pycassa.system_manager import *
-from pycassa.cassandra.ttypes import InvalidRequestException
+from pycassa.api_exceptions import *
 
 class SystemManagerTest(unittest.TestCase):
 
@@ -19,7 +20,7 @@ class SystemManagerTest(unittest.TestCase):
         sys.alter_column_family('TestKeyspace', 'TestCF', comment='testing')
         sys.create_index('TestKeyspace', 'TestCF', 'column', LONG_TYPE)
         sys.drop_column_family('TestKeyspace', 'TestCF')
- 
+
         sys.describe_ring('TestKeyspace')
         sys.describe_cluster_name()
         sys.describe_version()

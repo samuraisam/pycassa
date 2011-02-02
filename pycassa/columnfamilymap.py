@@ -19,7 +19,7 @@ IntString may be defined as:
 """
 
 from pycassa.types import Column
-from pycassa.cassandra.ttypes import IndexExpression, IndexClause
+from pycassa.index import IndexExpression, IndexClause
 
 __all__ = ['ColumnFamilyMap']
 
@@ -220,8 +220,10 @@ class ColumnFamilyMap(object):
         if instance is not None:
             new_exprs = []
             for expr in kwargs['index_clause'].expressions:
-                new_expr = IndexExpression(expr.column_name, expr.op,
-                        value=self.columns[expr.column_name].pack(instance.__dict__[expr.column_name]))
+                new_expr = IndexExpression(
+                        expr.column_name,
+                        value=self.columns[expr.column_name].pack(instance.__dict__[expr.column_name]),
+                        op=expr.op)
                 new_exprs.append(new_expr)
             old_clause = kwargs['index_clause']
             new_clause = IndexClause(new_exprs, old_clause.start_key, old_clause.count)

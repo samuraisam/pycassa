@@ -13,7 +13,8 @@ def setup_package():
         sys.create_column_family(TEST_KS, 'Indexed1')
         sys.create_index(TEST_KS, 'Indexed1', 'birthdate', LONG_TYPE)
     except:
-        sys.drop_keyspace(TEST_KS)
+        if TEST_KS in sys.list_keyspaces():
+            sys.drop_keyspace(TEST_KS)
         raise
     sys.close()
 

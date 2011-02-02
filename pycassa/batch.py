@@ -63,9 +63,6 @@ Calls to :meth:`insert` and :meth:`remove` can also be chained:
 """
 
 import threading
-from pycassa.cassandra.ttypes import (Column, ColumnOrSuperColumn,
-                                      ConsistencyLevel, Deletion, Mutation,
-                                      SlicePredicate, SuperColumn)
 
 __all__ = ['Mutator', 'CfMutator']
 
@@ -91,9 +88,10 @@ class Mutator(object):
         self._buffer = []
         self._lock = threading.RLock()
         self.pool = pool
+        self.adapter = self.pool.adapter
         self.limit = queue_size
         if write_consistency_level is None:
-            self.write_consistency_level = ConsistencyLevel.ONE
+            self.write_consistency_level = self.adapter.ConsistencyLevel.ONE
         else:
             self.write_consistency_level = write_consistency_level
 
@@ -137,18 +135,20 @@ class Mutator(object):
         _pack_name = column_family._pack_name
         _pack_value = column_family._pack_value
         for c, v in columns.iteritems():
-            cos = ColumnOrSuperColumn()
+            cos = self.adapter.ColumnOrSuperColumn()
             if column_family.super:
-                subc = [Column(name=_pack_name(subname),
-                               value=_pack_value(subvalue, subname),
-                               timestamp=timestamp, ttl=ttl)
-                            for subname, subvalue in v.iteritems()]
-                cos.super_column = SuperColumn(name=_pack_name(c, True),
-                                               columns=subc)
+                subc = [self.adapter.Column(name=_pack_name(subname),
+                                       value=_pack_value(subvalue, subname),
+                                       timestamp=timestamp, ttl=ttl)
+                        for subname, subvalue in v.iteritems()]
+                cos.super_column = self.adapter.SuperColumn(name=_pack_name(c, True),
+                                                            columns=subc)
             else:
-                cos.column = Column(name=_pack_name(c), value=_pack_value(v, c),
-                                    timestamp=timestamp, ttl=ttl)
-            yield Mutation(column_or_supercolumn=cos)
+                cos.column = self.adapter.Column(name=_pack_name(c), value=_pack_value(v, c),
+                                                 timestamp=timestamp, ttl=ttl)
+            mut = self.adapter.Mutation(column_or_supercolumn=cos)
+            print mut
+            yield mut
 
     def insert(self, column_family, key, columns, timestamp=None, ttl=None):
         """
@@ -176,15 +176,15 @@ class Mutator(object):
         """
         if timestamp == None:
             timestamp = column_family.timestamp()
-        deletion = Deletion(timestamp=timestamp)
+        deletion = self.adapter.Deletion(timestamp=timestamp)
         _pack_name = column_family._pack_name
         if super_column:
             deletion.super_column = _pack_name(super_column, True)
         if columns:
             packed_cols = [_pack_name(col, column_family.super and not super_column)
                            for col in columns]
-            deletion.predicate = SlicePredicate(column_names=packed_cols)
-        mutation = Mutation(deletion=deletion)
+            deletion.predicate = self.adapter.SlicePredicate(column_names=packed_cols)
+        mutation = self.adapter.Mutation(deletion=deletion)
         self._enqueue(key, column_family, (mutation,))
         return self
 

@@ -1,11 +1,10 @@
 from logging.pycassa_logger import *
 import time
 
-from connection import Connection
-from pycassa.cassandra.ttypes import IndexType, KsDef, CfDef, ColumnDef,\
-                                     InvalidRequestException
+from pycassa.connection import Connection
+import pycassa.versions
 
-_TIMEOUT = 10
+_TIMEOUT = 30
 _SAMPLE_PERIOD = 0.25
 
 SIMPLE_STRATEGY = 'SimpleStrategy'
@@ -35,7 +34,7 @@ TIME_UUID_TYPE = 'TimeUUIDType'
 LEXICAL_UUID_TYPE = 'LexicalUUIDType'
 """ Stores data as a non-version 1 UUID """
 
-KEYS_INDEX = IndexType.KEYS
+KEYS_INDEX = 'KEYS'
 """ A secondary index type where each indexed value receives its own row """
 
 
@@ -68,6 +67,7 @@ class SystemManager(object):
 
     def __init__(self, server='localhost:9160', credentials=None, framed_transport=True, cf_callback=None):
         self._conn = Connection(None, server, framed_transport, _TIMEOUT, credentials)
+        self._adapter = pycassa.versions.get_adapter_for(self._conn.version)
         self._cf_callback = cf_callback
 
     def close(self):
@@ -201,7 +201,7 @@ class SystemManager(object):
             strategy_class = 'org.apache.cassandra.locator.%s' % replication_strategy
         else:
             strategy_class = replication_strategy
-        ksdef = KsDef(name, strategy_class, strategy_options, replication_factor, [])
+        ksdef = self._adapter.KsDef(name, strategy_class, strategy_options, replication_factor, [])
         self._system_add_keyspace(ksdef)
 
     def alter_keyspace(self, keyspace, replication_factor=None,
@@ -325,7 +325,7 @@ class SystemManager(object):
         """
 
         self._conn.set_keyspace(keyspace)
-        cfdef = CfDef()
+        cfdef = self._adapter.CfDef()
         cfdef.keyspace = keyspace
         cfdef.name = name
 
@@ -379,7 +379,7 @@ class SystemManager(object):
                 setattr(cfdef, attr_name, attr)
 
     def _raise_ire(self, why):
-        ire = InvalidRequestException()
+        ire = pycassa.InvalidRequestException()
         ire.why = why
         raise ire
 
@@ -473,7 +473,7 @@ class SystemManager(object):
                 matched = True
                 break
         if not matched:
-            cfdef.column_metadata.append(ColumnDef(column, value_type, None, None))
+            cfdef.column_metadata.append(self._adapter.ColumnDef(column, value_type, None, None))
         self._system_update_column_family(cfdef)
         if self._cf_callback:
             self._cf_callback(keyspace, column_family)
@@ -511,7 +511,7 @@ class SystemManager(object):
         if value_type.find('.') == -1:
             value_type = 'org.apache.cassandra.db.marshal.%s' % value_type
 
-        coldef = ColumnDef(column, value_type, index_type, index_name)
+        coldef = self._adapter.ColumnDef(column, value_type, index_type, index_name)
 
         for c in cfdef.column_metadata:
             if c.name == column:

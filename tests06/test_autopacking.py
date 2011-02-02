@@ -22,7 +22,8 @@ TEST_KS = 'PycassaTestKeyspace'
 def setup_module():
     global pool
     credentials = {'username': 'jsmith', 'password': 'havebadpass'}
-    pool = ConnectionPool(TEST_KS, pool_size=10, credentials=credentials, timeout=15)
+    pool = ConnectionPool(TEST_KS, pool_size=10, credentials=credentials,
+                          framed_transport=False, timeout=15)
 
 def teardown_module():
     pool.dispose()
@@ -178,7 +179,6 @@ class TestCFs(unittest.TestCase):
             for sub_res in res:
                 assert_equal(sub_res[1], gdict)
 
-
 class TestSuperCFs(unittest.TestCase):
 
     @classmethod
@@ -330,7 +330,6 @@ class TestSuperCFs(unittest.TestCase):
             for sub_res in res:
                 assert_equal(sub_res[1], gdict)
 
-
 class TestSuperSubCFs(unittest.TestCase):
 
     @classmethod
@@ -471,82 +470,6 @@ class TestSuperSubCFs(unittest.TestCase):
             res = cf.get_range(start=KEYS[0], super_column=123L)
             for sub_res in res:
                 assert_equal(sub_res[1], gdict.get(123L))
-
-
-class TestValidators(unittest.TestCase):
-
-    def test_validated_columns(self):
-        sys = SystemManager()
-        sys.create_column_family(TEST_KS, 'Validators',)
-        sys.alter_column(TEST_KS, 'Validators', 'long', LONG_TYPE)
-        sys.alter_column(TEST_KS, 'Validators', 'int', INT_TYPE)
-        sys.alter_column(TEST_KS, 'Validators', 'time', TIME_UUID_TYPE)
-        sys.alter_column(TEST_KS, 'Validators', 'lex', LEXICAL_UUID_TYPE)
-        sys.alter_column(TEST_KS, 'Validators', 'ascii', ASCII_TYPE)
-        sys.alter_column(TEST_KS, 'Validators', 'utf8', UTF8_TYPE)
-        sys.alter_column(TEST_KS, 'Validators', 'bytes', BYTES_TYPE)
-        sys.close()
-
-        cf = ColumnFamily(pool, 'Validators')
-        key = 'key1'
-
-        col = {'long':1L}
-        cf.insert(key, col)
-        assert cf.get(key)['long'] == 1L
-
-        col = {'int':1}
-        cf.insert(key, col)
-        assert cf.get(key)['int'] == 1
-
-        col = {'time':TIME1}
-        cf.insert(key, col)
-        assert cf.get(key)['time'] == TIME1
-
-        col = {'lex':uuid.UUID(bytes='aaa aaa aaa aaaa')}
-        cf.insert(key, col)
-        assert cf.get(key)['lex'] == uuid.UUID(bytes='aaa aaa aaa aaaa')
-
-        col = {'ascii':'aaa'}
-        cf.insert(key, col)
-        assert cf.get(key)['ascii'] == 'aaa'
-
-        col = {'utf8':u'a\u0020'}
-        cf.insert(key, col)
-        assert cf.get(key)['utf8'] == u'a\u0020'
-
-        col = {'bytes':'aaa'}
-        cf.insert(key, col)
-        assert cf.get(key)['bytes'] == 'aaa'
-
-        cf.remove(key)
-
-
-class TestDefaultValidators(unittest.TestCase):
-
-    def test_default_validated_columns(self):
-        sys = SystemManager()
-        sys.create_column_family(TEST_KS, 'DefaultValidator', default_validation_class=LONG_TYPE)
-        sys.alter_column(TEST_KS, 'DefaultValidator', 'subcol', TIME_UUID_TYPE)
-        sys.close()
-
-        cf = ColumnFamily(pool, 'DefaultValidator')
-        key = 'key1'
-
-        col_cf  = {'aaaaaa': 1L}
-        col_cm  = {'subcol': TIME1}
-        col_ncf = {'aaaaaa': TIME1}
-        col_ncm = {'subcol': 1L}
-
-        # Both of these inserts work, as cf allows
-        #  longs and cm for 'subcol' allows TIMEUUIDs.
-        cf.insert(key, col_cf)
-        cf.insert(key, col_cm)
-        assert cf.get(key) == {'aaaaaa': 1L, 'subcol': TIME1}
-          
-        assert_raises(TypeError, cf.insert, key, col_ncf)
-        assert_raises(TypeError, cf.insert, key, col_ncm)
-
-        cf.remove(key)
 
 class TestTimeUUIDs(unittest.TestCase):
 

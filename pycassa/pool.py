@@ -6,18 +6,20 @@ usage scenarios and thread behavior requirements imposed by the
 application.
 
 """
-
-import time, threading, random
-
-import connection
-import queue as pool_queue
-from logging.pool_logger import PoolLogger
-from util import as_interface
-from cassandra.ttypes import TimedOutException, UnavailableException
-from thrift import Thrift
-
 import threading
 import socket
+import time
+import random
+
+from thrift import Thrift
+
+import pycassa.connection
+import pycassa.adapter07
+import pycassa.adapter06
+import pycassa.queue as pool_queue
+import pycassa.versions
+from pycassa.logging.pool_logger import PoolLogger
+from pycassa.util import as_interface
 
 _BASE_BACKOFF = 0.001
 
@@ -283,7 +285,7 @@ class AbstractPool(object):
                 'pool_id': self.logging_name}
 
 
-class ConnectionWrapper(connection.Connection):
+class ConnectionWrapper(pycassa.connection.Connection):
     """
     A wrapper class for :class:`Connection`s that adds pooling functionality.
 
@@ -316,9 +318,6 @@ class ConnectionWrapper(connection.Connection):
         self._state = ConnectionWrapper._CHECKED_OUT
         super(ConnectionWrapper, self).__init__(*args, **kwargs)
         self._pool._notify_on_connect(self)
-
-        self._should_fail = False
-        self._original_meth = self.send_batch_mutate
 
     def return_to_pool(self):
         """
@@ -380,15 +379,12 @@ class ConnectionWrapper(connection.Connection):
         with its contents.
 
         """
-        self.transport = new_conn_wrapper.transport
-        self._iprot = new_conn_wrapper._iprot
-        self._oprot = new_conn_wrapper._oprot
+        self.client = new_conn_wrapper.client
         self._lock = new_conn_wrapper._lock
         self.info = new_conn_wrapper.info
         self.starttime = new_conn_wrapper.starttime
         self.operation_count = new_conn_wrapper.operation_count
         self._state = ConnectionWrapper._CHECKED_OUT
-        self._should_fail = new_conn_wrapper._should_fail
 
     def _retry(f):
         def new_f(self, *args, **kwargs):
@@ -397,7 +393,8 @@ class ConnectionWrapper(connection.Connection):
                 result = getattr(super(ConnectionWrapper, self), f.__name__)(*args, **kwargs)
                 self._retry_count = 0 # reset the count after a success
                 return result
-            except (TimedOutException, UnavailableException, Thrift.TException, socket.error, IOError), exc:
+            except (adapter.TimedOutException, adapter.UnavailableException,
+                    Thrift.TException, socket.error, IOError), exc:
                 self._pool._notify_on_failure(exc, server=self.server,
                                               connection=self)
 
@@ -423,21 +420,14 @@ class ConnectionWrapper(connection.Connection):
         new_f.__name__ = f.__name__
         return new_f
 
-    def _fail_once(self, *args, **kwargs):
-        if self._should_fail:
-            self._should_fail = False
-            raise TimedOutException
-        else:
-            return self._original_meth(*args, **kwargs)
-
     @_retry
     def get(self, *args, **kwargs):
         pass
- 
+
     @_retry
     def get_slice(self, *args, **kwargs):
         pass
-        
+
     @_retry
     def get_range_slices(self, *args, **kwargs):
         pass
@@ -470,7 +460,7 @@ class ConnectionWrapper(connection.Connection):
     def get_keyspace_description(self, keyspace=None, use_dict_for_col_metadata=False):
         """
         Describes the given keyspace.
-        
+
         If `use_dict_for_col_metadata` is ``True``, the column metadata will be stored
         as a dictionary instead of a list
 
@@ -521,10 +511,10 @@ class ConnectionPool(AbstractPool):
         be supplied.  This should be a dictionary containing 'username' and
         'password' keys with appropriate string values.
 
-        `timeout` specifies in seconds how long individual connections will 
+        `timeout` specifies in seconds how long individual connections will
         block before timing out. If set to ``None``, connections will never
         timeout.
-        
+
         If `use_threadlocal` is set to ``True``, repeated calls to
         :meth:`get()` within the same application thread will
         return the same :class:`ConnectionWrapper` object if one has
@@ -588,7 +578,9 @@ class ConnectionPool(AbstractPool):
 
         .. code-block:: python
 
-            >>> pool = pycassa.ConnectionPool(keyspace='Keyspace1', server_list=['10.0.0.4:9160', '10.0.0.5:9160'], prefill=False)
+            >>> pool = pycassa.ConnectionPool(keyspace='Keyspace1',
+            ...                               server_list=['10.0.0.4:9160', '10.0.0.5:9160'],
+            ...                               prefill=False)
             >>> cf = pycassa.ColumnFamily(pool, 'Standard1')
             >>> cf.insert('key', {'col': 'val'})
             1287785685530679
@@ -608,6 +600,15 @@ class ConnectionPool(AbstractPool):
         self._prefill = prefill
         self._overflow_lock = self._overflow_enabled and \
                                     threading.Lock() or None
+
+        # Open a single connection to determine what version of
+        # Cassandra we're talking to. We'll set the pool's adapter attribute
+        # to the correct adapter version so that column families and batch
+        # don't have to pick an adapter.
+        temp_conn = self._create_connection()
+        self.adapter = pycassa.versions.get_adapter_for(temp_conn.version)
+        temp_conn.close()
+
         if prefill:
             for i in range(pool_size):
                 self._q.put(self._create_connection(), False)

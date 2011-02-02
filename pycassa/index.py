@@ -27,34 +27,31 @@ above 1970 and a state value of 'Utah'.
 
 """
 
-from pycassa.cassandra.ttypes import IndexClause, IndexExpression,\
-                                     IndexOperator
+__all__ = ['create_index_clause', 'create_index_expression',
+           'IndexExpression', 'IndexClause',
+           'EQ', 'GT', 'GTE', 'LT', 'LTE']
 
-__all__ = ['create_index_clause', 'create_index_expression', 'EQ', 'GT', 'GTE',
-           'LT', 'LTE']
-
-EQ = IndexOperator.EQ
+EQ = 'EQ'
 """ Equality (==) operator for index expressions """
 
-GT = IndexOperator.GT
+GT = 'GT'
 """ Greater-than (>) operator for index expressions """
 
-GTE = IndexOperator.GTE
+GTE = 'GTE'
 """ Greater-than-or-equal (>=) operator for index expressions """
 
-LT = IndexOperator.LT
+LT = 'LT'
 """ Less-than (<) operator for index expressions """
 
-LTE = IndexOperator.LTE
+LTE = 'LTE'
 """ Less-than-or-equal (<=) operator for index expressions """
 
 def create_index_clause(expr_list, start_key='', count=100):
     """
-    Constructs an :class:`~pycassa.cassandra.ttypes.IndexClause` for use with 
+    Constructs an :class:`~pycassa.cassandra.ttypes.IndexClause` for use with
     :meth:`~pycassa.columnfamily.get_indexed_slices()`
 
-    `expr_list` should be a list of
-    :class:`~pycassa.cassandra.ttypes.IndexExpression` objects that
+    `expr_list` should be a list of :class:`~IndexExpression` objects that
     must be matched for a row to be returned.  At least one of these expressions
     must be on an indexed column.
 
@@ -65,13 +62,11 @@ def create_index_clause(expr_list, start_key='', count=100):
     The number of rows to return is limited by `count`, which defaults to 100.
 
     """
-    return IndexClause(expressions=expr_list, start_key=start_key,
-                       count=count)
+    return IndexClause(expr_list, start_key, count)
 
 def create_index_expression(column_name, value, op=EQ):
     """
-    Constructs an :class:`~pycassa.cassandra.ttypes.IndexExpression` to use
-    in an :class:`~pycassa.cassandra.ttypes.IndexClause`
+    Constructs an :class:`~IndexExpression` to use in an :class:`~IndexClause`.
 
     The expression will be applied to the column with name `column_name`. A match
     will only occur if the operator specified with `op` returns ``True`` when used
@@ -80,4 +75,18 @@ def create_index_expression(column_name, value, op=EQ):
     The default operator is :const:`~EQ`, which tests for equality.
 
     """
-    return IndexExpression(column_name=column_name, op=op, value=value)
+    return IndexExpression(column_name, value, op)
+
+class IndexClause(object):
+
+    def __init__(self, expr_list, start_key, count):
+        self.expressions = expr_list
+        self.start_key = start_key
+        self.count = count
+
+class IndexExpression(object):
+
+    def __init__(self, column_name, value, op=EQ):
+        self.column_name = column_name
+        self.value = value
+        self.op = op

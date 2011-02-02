@@ -5,11 +5,8 @@ manipulation of data inside Cassandra.
 .. seealso:: :mod:`pycassa.columnfamilymap`
 """
 
-from pycassa.cassandra.ttypes import Column, ColumnOrSuperColumn,\
-    ColumnParent, ColumnPath, ConsistencyLevel, NotFoundException,\
-    SlicePredicate, SliceRange, SuperColumn, KeyRange,\
-    IndexExpression, IndexClause
 from pycassa.util import *
+from pycassa.api_exceptions import *
 
 try:
     from functools import wraps
@@ -34,9 +31,6 @@ else:
 
 __all__ = ['gm_timestamp', 'ColumnFamily', 'PooledColumnFamily']
 
-_TYPES = ['BytesType', 'LongType', 'IntegerType', 'UTF8Type', 'AsciiType',
-         'LexicalUUIDType', 'TimeUUIDType']
-
 _NON_SLICE = 0
 _SLICE_START = 1
 _SLICE_FINISH = 2
@@ -50,8 +44,8 @@ class ColumnFamily(object):
     """ An abstraction of a Cassandra column family or super column family. """
 
     def __init__(self, pool, column_family, buffer_size=1024,
-                 read_consistency_level=ConsistencyLevel.ONE,
-                 write_consistency_level=ConsistencyLevel.ONE,
+                 read_consistency_level=None,
+                 write_consistency_level=None,
                  timestamp=gm_timestamp, super=False,
                  dict_class=OrderedDict, autopack_names=True,
                  autopack_values=True):
@@ -102,8 +96,6 @@ class ColumnFamily(object):
         self._tlocal.client = None
         self.column_family = column_family
         self.buffer_size = buffer_size
-        self.read_consistency_level = read_consistency_level
-        self.write_consistency_level = write_consistency_level
         self.timestamp = timestamp
         self.dict_class = dict_class
         self.autopack_names = autopack_names
@@ -115,46 +107,14 @@ class ColumnFamily(object):
         self.col_name_data_type = None
         self.supercol_name_data_type = None
         self.col_type_dict = dict()
+        self._adapter = pool.adapter
+        self._cf_adapter = pool.adapter.CfAdapter(self)
+        self._cf_adapter.load_type_map()
 
-        col_fam = None
-        try:
-            try:
-                self._obtain_connection()
-                col_fam = self._tlocal.client.get_keyspace_description(use_dict_for_col_metadata=True)[self.column_family]
-            except KeyError:
-                nfe = NotFoundException()
-                nfe.why = 'Column family %s not found.' % self.column_family
-                raise nfe
-        finally:
-            self._release_connection()
-
-        if col_fam is not None:
-            self.super = col_fam.column_type == 'Super'
-            if self.autopack_names:
-                if not self.super:
-                    self.col_name_data_type = col_fam.comparator_type
-                else:
-                    self.col_name_data_type = col_fam.subcomparator_type
-                    self.supercol_name_data_type = self._extract_type_name(col_fam.comparator_type)
-
-                index = self.col_name_data_type = self._extract_type_name(self.col_name_data_type)
-            if self.autopack_values:
-                self.cf_data_type = self._extract_type_name(col_fam.default_validation_class)
-                for name, cdef in col_fam.column_metadata.items():
-                    self.col_type_dict[name] = self._extract_type_name(cdef.validation_class)
-
-    def _extract_type_name(self, string):
-
-        if string is None: return 'BytesType'
-
-        index = string.rfind('.')
-        if index == -1:
-            string = 'BytesType'
-        else:
-            string = string[index + 1: ]
-            if string not in _TYPES:
-                string = 'BytesType'
-        return string
+        if read_consistency_level is None:
+            self.read_consistency_level = self._adapter.ConsistencyLevel.ONE
+        if write_consistency_level is None:
+            self.write_consistency_level = self._adapter.ConsistencyLevel.ONE
 
     def _convert_Column_to_base(self, column, include_timestamp):
         value = self._unpack_value(column.value, column.name)
@@ -186,35 +146,30 @@ class ColumnFamily(object):
         return ret
 
     def _rcl(self, alternative):
-        """Helper function that returns self.read_consistency_level if
-        alternative is None, otherwise returns alternative"""
         if alternative is None:
             return self.read_consistency_level
         return alternative
 
     def _wcl(self, alternative):
-        """Helper function that returns self.write_consistency_level
-        if alternative is None, otherwise returns alternative"""
         if alternative is None:
             return self.write_consistency_level
         return alternative
 
     def _create_column_path(self, super_column=None, column=None):
-        return ColumnPath(self.column_family,
-                          self._pack_name(super_column, is_supercol_name=True),
-                          self._pack_name(column, False))
+        return self._adapter.ColumnPath(self.column_family,
+                                       self._pack_name(super_column, is_supercol_name=True),
+                                       self._pack_name(column, False))
 
     def _create_column_parent(self, super_column=None):
-        return ColumnParent(column_family=self.column_family,
-                            super_column=self._pack_name(super_column, is_supercol_name=True))
+        return self._adapter.ColumnParent(column_family=self.column_family,
+                                         super_column=self._pack_name(super_column, is_supercol_name=True))
 
-    def _create_slice_predicate(self, columns, column_start, column_finish,
-                                      column_reversed, column_count):
+    def _create_slice_predicate(self, columns, column_start, column_finish, column_reversed, column_count):
         if columns is not None:
             packed_cols = []
             for col in columns:
                 packed_cols.append(self._pack_name(col, is_supercol_name=self.super))
-            return SlicePredicate(column_names=packed_cols)
+            return self._adapter.SlicePredicate(column_names=packed_cols)
         else:
             if column_start != '':
                 column_start = self._pack_name(column_start,
@@ -224,9 +179,9 @@ class ColumnFamily(object):
                 column_finish = self._pack_name(column_finish,
                                                 is_supercol_name=self.super,
                                                 slice_end=_SLICE_FINISH)
-            sr = SliceRange(start=column_start, finish=column_finish,
-                            reversed=column_reversed, count=column_count)
-            return SlicePredicate(slice_range=sr)
+            sr = self._adapter.SliceRange(start=column_start, finish=column_finish,
+                                         reversed=column_reversed, count=column_count)
+            return self._adapter.SlicePredicate(slice_range=sr)
 
     def _pack_name(self, value, is_supercol_name=False,
             slice_end=_NON_SLICE):
@@ -439,7 +394,7 @@ class ColumnFamily(object):
                            column_reversed=False, column_count=100, include_timestamp=False,
                            read_consistency_level=None, buffer_size=None):
         """
-        Similar to :meth:`get_range()`, but an :class:`~pycassa.cassandra.ttypes.IndexClause`
+        Similar to :meth:`get_range()`, but an :class:`~pycassa.index.IndexClause`
         is used instead of a key range.
 
         `index_clause` limits the keys that are returned based on expressions
@@ -455,7 +410,7 @@ class ColumnFamily(object):
         """
 
         assert not self.super, "get_indexed_slices() is not " \
-                "supported by super column families"
+                "supported for super column families"
 
         cp = self._create_column_parent()
         sp = self._create_slice_predicate(columns, column_start, column_finish,
@@ -464,11 +419,12 @@ class ColumnFamily(object):
         new_exprs = []
         # Pack the values in the index clause expressions
         for expr in index_clause.expressions:
-            new_exprs.append(IndexExpression(self._pack_name(expr.column_name),
-                                             expr.op,
-                                             self._pack_value(expr.value, expr.column_name)))
+            new_exprs.append(self._adapter.IndexExpression(
+                self._pack_name(expr.column_name),
+                expr.op,
+                self._pack_value(expr.value, expr.column_name)))
 
-        clause = IndexClause(new_exprs, index_clause.start_key, index_clause.count)
+        clause = self._adapter.IndexClause(new_exprs, index_clause.start_key, index_clause.count)
 
         # Figure out how we will chunk the request
         if buffer_size is None:
@@ -565,18 +521,11 @@ class ColumnFamily(object):
         `column_finish` only apply to the subcolumns of `super_column`.
 
         """
-
         cp = self._create_column_parent(super_column)
         sp = self._create_slice_predicate(columns, column_start, column_finish,
                                           False, self.MAX_COUNT)
 
-        try:
-            self._obtain_connection()
-            ret = self._tlocal.client.get_count(key, cp, sp,
-                                         self._rcl(read_consistency_level))
-        finally:
-            self._release_connection()
-        return ret
+        return self._cf_adapter.get_count(key, cp, sp, self._rcl(read_consistency_level))
 
     def multiget_count(self, keys, super_column=None,
                        read_consistency_level=None,
@@ -647,7 +596,7 @@ class ColumnFamily(object):
         while True:
             if row_count is not None:
                 buffer_size = min(row_count - count + 1, buffer_size)
-            key_range = KeyRange(start_key=last_key, end_key=finish, count=buffer_size)
+            key_range = self._adapter.KeyRange(start_key=last_key, end_key=finish, count=buffer_size)
             try:
                 self._obtain_connection()
                 key_slices = self._tlocal.client.get_range_slices(cp, sp, key_range,
@@ -693,32 +642,8 @@ class ColumnFamily(object):
         The timestamp Cassandra reports as being used for insert is returned.
 
         """
-        if ((not self.super) and len(columns) == 1) or \
-           (self.super and len(columns) == 1 and len(columns.values()[0]) == 1):
-
-            if timestamp is None:
-                timestamp = self.timestamp()
-
-            if self.super:
-                super_col = columns.keys()[0]
-                cp = self._create_column_path(super_col)
-                columns = columns.values()[0]
-            else:
-                cp = self._create_column_path()
-
-            colname = columns.keys()[0]
-            colval = self._pack_value(columns.values()[0], colname)
-            colname = self._pack_name(colname, False)
-            column = Column(colname, colval, timestamp, ttl)
-            try:
-                self._obtain_connection()
-                res = self._tlocal.client.insert(key, cp, column, self._wcl(write_consistency_level))
-            finally:
-                self._release_connection()
-            return res
-        else:
-            return self.batch_insert({key: columns}, timestamp=timestamp, ttl=ttl,
-                                     write_consistency_level=write_consistency_level)
+        return self.batch_insert({key: columns}, timestamp=timestamp, ttl=ttl,
+                                 write_consistency_level=write_consistency_level)
 
     def batch_insert(self, rows, timestamp=None, ttl=None, write_consistency_level = None):
         """
