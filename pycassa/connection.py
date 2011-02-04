@@ -42,11 +42,43 @@ class Connection(object):
         else:
             self.transport = TTransport.TBufferedTransport(socket)
         protocol = TBinaryProtocol.TBinaryProtocolAccelerated(self.transport)
-        self.client = pycassa.cassandra07.Cassandra.Client(protocol)
-        self.transport.open()
 
-        self.version = int(self.client.describe_version().split('.', 1)[0])
-        self.transport.close()
+        # Try 0.7 first
+        try06 = False
+        try:
+            self.client = pycassa.cassandra07.Cassandra.Client(protocol)
+            self.transport.open()
+
+            if credentials is not None:
+                request = pycassa.cassandra07.ttypes.AuthenticationRequest(credentials=credentials)
+                self.client.login(request)
+            self.version = int(self.client.describe_version().split('.', 1)[0])
+            self.transport.close()
+        except Thrift.TApplicationException:
+            try06 = True
+        finally:
+            self.transport.close()
+
+        if try06:
+            try:
+                socket = TSocket.TSocket(host, port)
+                if timeout is not None:
+                    socket.setTimeout(timeout*1000.0)
+                if framed_transport:
+                    self.transport = TTransport.TFramedTransport(socket)
+                else:
+                    self.transport = TTransport.TBufferedTransport(socket)
+                protocol = TBinaryProtocol.TBinaryProtocolAccelerated(self.transport)
+
+                self.client = pycassa.cassandra06.Cassandra.Client(protocol)
+                self.transport.open()
+
+                if credentials is not None:
+                    request = pycassa.cassandra07.ttypes.AuthenticationRequest(credentials=credentials)
+                    self.client.login(keyspace, request)
+                self.version = int(self.client.describe_version().split('.', 1)[0])
+            finally:
+                self.transport.close()
 
         socket = TSocket.TSocket(host, int(port))
         if timeout is not None:
@@ -94,7 +126,8 @@ class Connection(object):
             cls = exc.__class__.__name__
             if hasattr(pycassa.api_exceptions, cls):
                 why = getattr(exc, 'why', None)
-                raise getattr(pycassa.api_exceptions, cls)(why=why)
+                exc_class = getattr(pycassa.api_exceptions, cls)
+                raise exc_class(why)
             else:
                 raise
 

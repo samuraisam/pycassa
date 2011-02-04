@@ -34,7 +34,6 @@ class TestCFs(unittest.TestCase):
     def setup_class(cls):
         sys = SystemManager()
         sys.create_column_family(TEST_KS, 'StdLong', comparator_type=LONG_TYPE)
-        sys.create_column_family(TEST_KS, 'StdInteger', comparator_type=INT_TYPE)
         sys.create_column_family(TEST_KS, 'StdTimeUUID', comparator_type=TIME_UUID_TYPE)
         sys.create_column_family(TEST_KS, 'StdLexicalUUID', comparator_type=LEXICAL_UUID_TYPE)
         sys.create_column_family(TEST_KS, 'StdAscii', comparator_type=ASCII_TYPE)
@@ -43,14 +42,13 @@ class TestCFs(unittest.TestCase):
         sys.close()
 
         cls.cf_long  = ColumnFamily(pool, 'StdLong')
-        cls.cf_int   = ColumnFamily(pool, 'StdInteger')
         cls.cf_time  = ColumnFamily(pool, 'StdTimeUUID')
         cls.cf_lex   = ColumnFamily(pool, 'StdLexicalUUID')
         cls.cf_ascii = ColumnFamily(pool, 'StdAscii')
         cls.cf_utf8  = ColumnFamily(pool, 'StdUTF8')
         cls.cf_bytes = ColumnFamily(pool, 'StdBytes')
 
-        cls.cfs = [cls.cf_long, cls.cf_int, cls.cf_time, cls.cf_lex,
+        cls.cfs = [cls.cf_long, cls.cf_time, cls.cf_lex,
                     cls.cf_ascii, cls.cf_utf8, cls.cf_bytes]
 
     def tearDown(self):
@@ -75,9 +73,6 @@ class TestCFs(unittest.TestCase):
                      2222222222222222L,
                      3333333333333333L]
         type_groups.append(self.make_group(TestCFs.cf_long, long_cols))
-
-        int_cols = [1,2,3]
-        type_groups.append(self.make_group(TestCFs.cf_int, int_cols))
 
         time_cols = [TIME1, TIME2, TIME3]
         type_groups.append(self.make_group(TestCFs.cf_time, time_cols))
@@ -185,7 +180,6 @@ class TestSuperCFs(unittest.TestCase):
     def setup_class(cls):
         sys = SystemManager()
         sys.create_column_family(TEST_KS, 'SuperLong', super=True, comparator_type=LONG_TYPE)
-        sys.create_column_family(TEST_KS, 'SuperInt', super=True, comparator_type=INT_TYPE)
         sys.create_column_family(TEST_KS, 'SuperTime', super=True, comparator_type=TIME_UUID_TYPE)
         sys.create_column_family(TEST_KS, 'SuperLex', super=True, comparator_type=LEXICAL_UUID_TYPE)
         sys.create_column_family(TEST_KS, 'SuperAscii', super=True, comparator_type=ASCII_TYPE)
@@ -194,14 +188,13 @@ class TestSuperCFs(unittest.TestCase):
         sys.close()
 
         cls.cf_suplong  = ColumnFamily(pool, 'SuperLong')
-        cls.cf_supint   = ColumnFamily(pool, 'SuperInt')
         cls.cf_suptime  = ColumnFamily(pool, 'SuperTime')
         cls.cf_suplex   = ColumnFamily(pool, 'SuperLex')
         cls.cf_supascii = ColumnFamily(pool, 'SuperAscii')
         cls.cf_suputf8  = ColumnFamily(pool, 'SuperUTF8')
         cls.cf_supbytes = ColumnFamily(pool, 'SuperBytes')
 
-        cls.cfs = [cls.cf_suplong, cls.cf_supint, cls.cf_suptime,
+        cls.cfs = [cls.cf_suplong, cls.cf_suptime,
                    cls.cf_suplex, cls.cf_supascii, cls.cf_suputf8,
                    cls.cf_supbytes]
 
@@ -227,9 +220,6 @@ class TestSuperCFs(unittest.TestCase):
                      2222222222222222L,
                      3333333333333333L]
         type_groups.append(self.make_super_group(TestSuperCFs.cf_suplong, long_cols))
-
-        int_cols = [1,2,3]
-        type_groups.append(self.make_super_group(TestSuperCFs.cf_supint, int_cols))
 
         time_cols = [TIME1, TIME2, TIME3]
         type_groups.append(self.make_super_group(TestSuperCFs.cf_suptime, time_cols))
@@ -337,8 +327,6 @@ class TestSuperSubCFs(unittest.TestCase):
         sys = SystemManager()
         sys.create_column_family(TEST_KS, 'SuperLongSubLong', super=True,
                                  comparator_type=LONG_TYPE, subcomparator_type=LONG_TYPE)
-        sys.create_column_family(TEST_KS, 'SuperLongSubInt', super=True,
-                                 comparator_type=LONG_TYPE, subcomparator_type=INT_TYPE)
         sys.create_column_family(TEST_KS, 'SuperLongSubTime', super=True,
                                  comparator_type=LONG_TYPE, subcomparator_type=TIME_UUID_TYPE)
         sys.create_column_family(TEST_KS, 'SuperLongSubLex', super=True,
@@ -352,17 +340,15 @@ class TestSuperSubCFs(unittest.TestCase):
         sys.close()
 
         cls.cf_suplong_sublong  = ColumnFamily(pool, 'SuperLongSubLong')
-        cls.cf_suplong_subint   = ColumnFamily(pool, 'SuperLongSubInt')
         cls.cf_suplong_subtime  = ColumnFamily(pool, 'SuperLongSubTime')
         cls.cf_suplong_sublex   = ColumnFamily(pool, 'SuperLongSubLex')
         cls.cf_suplong_subascii = ColumnFamily(pool, 'SuperLongSubAscii')
         cls.cf_suplong_subutf8  = ColumnFamily(pool, 'SuperLongSubUTF8')
         cls.cf_suplong_subbytes = ColumnFamily(pool, 'SuperLongSubBytes')
 
-        cls.cfs = [cls.cf_suplong_subint, cls.cf_suplong_subint,
-                   cls.cf_suplong_subtime, cls.cf_suplong_sublex,
-                   cls.cf_suplong_subascii, cls.cf_suplong_subutf8,
-                   cls.cf_suplong_subbytes]
+        cls.cfs = [cls.cf_suplong_sublong, cls.cf_suplong_subtime,
+                   cls.cf_suplong_sublex, cls.cf_suplong_subascii,
+                   cls.cf_suplong_subutf8, cls.cf_suplong_subbytes]
 
     def tearDown(self):
         for cf in TestSuperSubCFs.cfs:
@@ -386,9 +372,6 @@ class TestSuperSubCFs(unittest.TestCase):
                      2222222222222222L,
                      3333333333333333L]
         type_groups.append(self.make_sub_group(TestSuperSubCFs.cf_suplong_sublong, long_cols))
-
-        int_cols = [1,2,3]
-        type_groups.append(self.make_sub_group(TestSuperSubCFs.cf_suplong_subint, int_cols))
 
         time_cols = [TIME1, TIME2, TIME3]
         type_groups.append(self.make_sub_group(TestSuperSubCFs.cf_suplong_subtime, time_cols))

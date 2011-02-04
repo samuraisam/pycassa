@@ -25,8 +25,11 @@ def teardown_module():
 class TestMutator(unittest.TestCase):
 
     def tearDown(self):
-        cf.truncate()
-        scf.truncate()
+        for key, columns in cf.get_range():
+            cf.remove(key)
+
+        for key, columns in scf.get_range():
+            cf.remove(key)
 
     def test_insert(self):
         batch = cf.batch()

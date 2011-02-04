@@ -20,6 +20,7 @@ import pycassa.queue as pool_queue
 import pycassa.versions
 from pycassa.logging.pool_logger import PoolLogger
 from pycassa.util import as_interface
+from pycassa.api_exceptions import *
 
 _BASE_BACKOFF = 0.001
 
@@ -393,7 +394,7 @@ class ConnectionWrapper(pycassa.connection.Connection):
                 result = getattr(super(ConnectionWrapper, self), f.__name__)(*args, **kwargs)
                 self._retry_count = 0 # reset the count after a success
                 return result
-            except (adapter.TimedOutException, adapter.UnavailableException,
+            except (TimedOutException, UnavailableException,
                     Thrift.TException, socket.error, IOError), exc:
                 self._pool._notify_on_failure(exc, server=self.server,
                                               connection=self)

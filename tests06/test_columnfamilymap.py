@@ -7,7 +7,7 @@ from pycassa import ColumnFamily, ConnectionPool, \
 from nose.tools import assert_raises, assert_equal, assert_true
 from nose.plugins.skip import *
 
-TEST_KS = 'Keyspace1'
+TEST_KS = 'PycassaTestKeyspace'
 
 def setup_module():
     global pool, cf, scf, sys_man

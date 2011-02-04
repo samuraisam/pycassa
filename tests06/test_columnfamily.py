@@ -6,19 +6,15 @@ from nose.plugins.skip import *
 
 import unittest
 
-TEST_KS = 'Keyspace1'
+TEST_KS = 'PycassaTestKeyspace'
 
 def setup_module():
     global pool, cf, scf, sys_man
     credentials = {'username': 'jsmith', 'password': 'havebadpass'}
-    # pool = ConnectionPool(keyspace=TEST_KS, credentials=credentials, framed_transport=False)
-    print "A"
-    pool = ConnectionPool(keyspace=TEST_KS, framed_transport=False)
+    pool = ConnectionPool(keyspace=TEST_KS, credentials=credentials, framed_transport=False)
     cf = ColumnFamily(pool, 'Standard1', dict_class=dict)
-    print "B"
     scf = ColumnFamily(pool, 'Super1', dict_class=dict)
     sys_man = SystemManager(framed_transport=False)
-    print "C"
 
 def teardown_module():
     pool.dispose()
@@ -83,7 +79,8 @@ class TestColumnFamily(unittest.TestCase):
         if sys_man.describe_partitioner() == 'RandomPartitioner':
             raise SkipTest('Cannot use RandomPartitioner for this test')
 
-        cf.truncate()
+        for key, columns in cf.get_range():
+            cf.remove(key)
 
         keys = []
         columns = {'c': 'v'}
@@ -177,7 +174,8 @@ class TestColumnFamily(unittest.TestCase):
             count += 1
         assert_equal(count, 201)
 
-        cf.truncate()
+        for key, columns in cf.get_range():
+            cf.remove(key)
 
     def test_remove(self):
         key = 'TestColumnFamily.test_remove'

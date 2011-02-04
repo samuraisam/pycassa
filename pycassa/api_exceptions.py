@@ -2,15 +2,9 @@ __all__ = ['NotFoundException', 'InvalidRequestException',
            'AuthenticationException', 'AuthorizationException',
            'UnavailableException', 'TimedOutException']
 
-class WhyException(Exception):
-
-    def __init__(self, why=None):
-        self.why = why
-
-class NotFoundException(WhyException): pass
-class InvalidRequestException(WhyException): pass
-class UnavailableException(WhyException): pass
-class TimedOutException(WhyException): pass
-class AuthenticationException(WhyException): pass
-class AuthorizationException(WhyException): pass
-class IncompatibleAPIException(Exception): pass
+class NotFoundException(Exception): pass
+class InvalidRequestException(Exception): pass
+class UnavailableException(Exception): pass
+class TimedOutException(Exception): pass
+class AuthenticationException(Exception): pass
+class AuthorizationException(Exception): pass
