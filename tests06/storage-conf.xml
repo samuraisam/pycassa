@@ -29,7 +29,6 @@
 
       <ColumnFamily Name="StdBytes" CompareWith="BytesType"/>
       <ColumnFamily Name="StdLong" CompareWith="LongType"/>
-      <ColumnFamily Name="StdInteger" CompareWith="IntegerType"/>
       <ColumnFamily Name="StdAscii" CompareWith="AsciiType"/>
       <ColumnFamily Name="StdUTF8" CompareWith="UTF8Type"/>
       <ColumnFamily Name="StdLexicalUUID" CompareWith="LexicalUUIDType"/>
@@ -37,14 +36,12 @@
 
       <ColumnFamily Name="SuperBytes" ColumnType="Super" CompareWith="BytesType"/>
       <ColumnFamily Name="SuperLong" ColumnType="Super" CompareWith="LongType"/>
-      <ColumnFamily Name="SuperInt" ColumnType="Super" CompareWith="IntegerType"/>
       <ColumnFamily Name="SuperAscii" ColumnType="Super" CompareWith="AsciiType"/>
       <ColumnFamily Name="SuperUTF8" ColumnType="Super" CompareWith="UTF8Type"/>
       <ColumnFamily Name="SuperLex" ColumnType="Super" CompareWith="LexicalUUIDType"/>
       <ColumnFamily Name="SuperTime" ColumnType="Super" CompareWith="TimeUUIDType"/>
 
       <ColumnFamily Name="SuperLongSubLong" ColumnType="Super" CompareWith="LongType" CompareSubcolumnsWith="LongType"/>
-      <ColumnFamily Name="SuperLongSubInt" ColumnType="Super" CompareWith="LongType" CompareSubcolumnsWith="IntegerType"/>
       <ColumnFamily Name="SuperLongSubTime" ColumnType="Super" CompareWith="LongType" CompareSubcolumnsWith="TimeUUIDType"/>
       <ColumnFamily Name="SuperLongSubLex" ColumnType="Super" CompareWith="LongType" CompareSubcolumnsWith="LexicalUUIDType"/>
       <ColumnFamily Name="SuperLongSubAscii" ColumnType="Super" CompareWith="LongType" CompareSubcolumnsWith="AsciiType"/>
