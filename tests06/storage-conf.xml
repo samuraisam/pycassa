@@ -58,6 +58,8 @@
   <Authenticator>org.apache.cassandra.auth.SimpleAuthenticator</Authenticator>
   <Partitioner>org.apache.cassandra.dht.OrderPreservingPartitioner</Partitioner>
   <InitialToken></InitialToken>
+
+  <SavedCachesDirectory>/var/lib/cassandra/saved_caches</SavedCachesDirectory>
   <CommitLogDirectory>/var/lib/cassandra/commitlog</CommitLogDirectory>
   <DataFileDirectories>
       <DataFileDirectory>/var/lib/cassandra/data</DataFileDirectory>
