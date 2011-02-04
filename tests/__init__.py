@@ -1,6 +1,22 @@
 from pycassa.system_manager import *
+from pycassa.versions import *
+from nose.plugins.skip import *
 
 TEST_KS = 'PycassaTestKeyspace'
+
+conn = None
+try:
+    conn = pycassa.connection.Connection(None, 'localhost:9160', True, 0.5, None)
+    if conn.version != CASSANDRA_07_API_VERSION:
+        print conn.version
+        raise SkipTest('Cassandra 0.7.x not found')
+except Exception, exc:
+        print exc
+        raise exc
+        raise SkipTest()
+finally:
+    if conn is not None:
+        conn.close()
 
 def setup_package():
     sys = SystemManager()
