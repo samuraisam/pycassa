@@ -642,8 +642,26 @@ class ColumnFamily(object):
         The timestamp Cassandra reports as being used for insert is returned.
 
         """
-        return self.batch_insert({key: columns}, timestamp=timestamp, ttl=ttl,
-                                 write_consistency_level=write_consistency_level)
+        if ((not self.super) and len(columns) == 1) or \
+           (self.super and len(columns) == 1 and len(columns.values()[0]) == 1):
+
+            if timestamp is None:
+                timestamp = self.timestamp()
+
+            super_col = None
+            if self.super:
+                super_col = self._pack_name(columns.keys()[0], is_supercol_name=True)
+                columns = columns.values()[0]
+
+            colname = columns.keys()[0]
+            colval = self._pack_value(columns.values()[0], colname)
+            colname = self._pack_name(colname, False)
+            self._cf_adapter.insert(key, colname, colval, timestamp,
+                                    self._wcl(write_consistency_level), super_col, ttl)
+            return timestamp
+        else:
+            return self.batch_insert({key: columns}, timestamp=timestamp, ttl=ttl,
+                                     write_consistency_level=write_consistency_level)
 
     def batch_insert(self, rows, timestamp=None, ttl=None, write_consistency_level = None):
         """

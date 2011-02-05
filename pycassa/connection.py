@@ -119,6 +119,7 @@ class Connection(object):
 
     def _call_with_translation(self, f, needs_keyspace, *args, **kwargs):
         try:
+            print args, kwargs
             if self.version == CASS_07 or not needs_keyspace:
                 return f(*args, **kwargs)
             elif self.version == CASS_06:
@@ -187,6 +188,10 @@ class Connection(object):
 
     @only_versions(CASS_07)
     def get_indexed_slices(self, *args, **kwargs):
+        pass
+
+    @cross_version(True)
+    def insert(self, *args, **kwargs):
         pass
 
     @cross_version(True)

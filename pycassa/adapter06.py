@@ -1,7 +1,5 @@
 import pycassa.cassandra06.ttypes as parent
-
 from pycassa.api_exceptions import NotFoundException
-
 import threading
 
 _TYPES = ['BytesType', 'LongType', 'IntegerType', 'UTF8Type', 'AsciiType',
@@ -75,6 +73,14 @@ class CfAdapter(object):
         finally:
             self._release_connection()
 
+    def insert(self, key, col, value, timestamp, wcl, supercol=None, ttl=None):
+        cp = ColumnPath(self.cf.column_family, supercol, col)
+        try:
+            self._obtain_connection()
+            return self._tlocal.client.insert(key, cp, value, timestamp, wcl)
+        finally:
+            self._release_connection()
+
 class Column(parent.Column):
 
     def __init__(self, name, value, timestamp, ttl=None):
@@ -86,27 +92,11 @@ class SuperColumn(parent.SuperColumn):
 class ColumnOrSuperColumn(parent.ColumnOrSuperColumn):
     pass
 
-#class ColumnDef(parent.ColumnDef):
-#
-#    def __init__(self, name, validation_class=None, index_type=None, index_name=None):
-#        if index_type is not None:
-#            index_type = getattr(parent.IndexType, index_type)
-#        parent.ColumnDef.__init__(self, name, validation_class, index_type, index_name)
-
 class ColumnParent(parent.ColumnParent):
     pass
 
 class ColumnPath(parent.ColumnPath):
     pass
-
-#class IndexExpression(parent.IndexExpression):
-#
-#    def __init__(self, name, op, value):
-#        op = getattr(parent.IndexOperator, op)
-#        parent.IndexExpression.__init__(self, name, op, value)
-
-#class IndexClause(parent.IndexClause):
-#    pass
 
 class ConsistencyLevel(parent.ConsistencyLevel):
     pass
@@ -128,9 +118,6 @@ class KeyRange(parent.KeyRange):
 
 class KeySlice(parent.KeySlice):
     pass
-
-#class KeyCount(parent.KeyCount):
-#    pass
 
 class CfDef(object):
 

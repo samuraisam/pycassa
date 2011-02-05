@@ -22,7 +22,7 @@ from pycassa.logging.pool_logger import PoolLogger
 from pycassa.util import as_interface
 from pycassa.api_exceptions import *
 
-_BASE_BACKOFF = 0.001
+_BASE_BACKOFF = 0.01
 
 __all__ = ['QueuePool', 'ConnectionPool', 'PoolListener',
            'ConnectionWrapper', 'AllServersUnavailable',
@@ -427,6 +427,18 @@ class ConnectionWrapper(pycassa.connection.Connection):
 
     @_retry
     def get_slice(self, *args, **kwargs):
+        pass
+
+    @_retry
+    def multiget_slice(self, *args, **kwargs):
+        pass
+
+    @_retry
+    def get_count(self, *args, **kwargs):
+        pass
+
+    @_retry
+    def multiget_count(self, *args, **kwargs):
         pass
 
     @_retry
