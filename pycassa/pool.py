@@ -626,6 +626,7 @@ class ConnectionPool(AbstractPool):
                          keyspace=self.keyspace,
                          server_list=self.server_list,
                          credentials=self.credentials,
+                         framed_transport=self.framed_transport,
                          timeout=self.timeout,
                          recycle=self._recycle,
                          max_retries=self._max_retries,
