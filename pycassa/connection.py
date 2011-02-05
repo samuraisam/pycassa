@@ -91,13 +91,13 @@ class Connection(object):
             self.transport = TTransport.TBufferedTransport(socket)
         protocol = TBinaryProtocol.TBinaryProtocolAccelerated(self.transport)
 
-        if self.version == CASSANDRA_06_API_VERSION:
+        if self.version == CASS_06:
             self.client = pycassa.cassandra06.Cassandra.Client(protocol)
             self.transport.open()
             if credentials is not None:
                 request = pycassa.cassandra06.ttypes.AuthenticationRequest(credentials=credentials)
                 self.client.login(keyspace, request)
-        elif self.version == CASSANDRA_07_API_VERSION:
+        elif self.version == CASS_07:
             self.client = pycassa.cassandra07.Cassandra.Client(protocol)
             self.transport.open()
             if credentials is not None:
@@ -111,17 +111,17 @@ class Connection(object):
     def set_keyspace(self, keyspace):
         self.keyspace = keyspace
         if keyspace is not None:
-            if self.version == CASSANDRA_07_API_VERSION:
+            if self.version == CASS_07:
                 self.client.set_keyspace(keyspace)
 
     def close(self):
         self.transport.close()
 
-    def call_with_translation(self, f, needs_keyspace, *args, **kwargs):
+    def _call_with_translation(self, f, needs_keyspace, *args, **kwargs):
         try:
-            if self.version == CASSANDRA_07_API_VERSION or not needs_keyspace:
+            if self.version == CASS_07 or not needs_keyspace:
                 return f(*args, **kwargs)
-            elif self.version == CASSANDRA_06_API_VERSION:
+            elif self.version == CASS_06:
                 return f(self.keyspace, *args, **kwargs)
         except Exception, exc:
             # Raise an API version independent copy of the exception
@@ -139,7 +139,7 @@ class Connection(object):
 
             def new_f(self, *args, **kwargs):
                 func = getattr(self.client, old_f.__name__)
-                return self.call_with_translation(func, needs_keyspace, *args, **kwargs)
+                return self._call_with_translation(func, needs_keyspace, *args, **kwargs)
 
             new_f.__name__ = old_f.__name__
             return new_f
@@ -154,7 +154,7 @@ class Connection(object):
                 assert self.version in versions, \
                         "The function %s is not available for the version of Cassandra in use" % old_f.__name__
                 func = getattr(self.client, old_f.__name__)
-                return self.call_with_translation(func, True, *args, **kwargs)
+                return self._call_with_translation(func, True, *args, **kwargs)
 
             new_f.__name__ = old_f.__name__
             return new_f
@@ -177,7 +177,7 @@ class Connection(object):
     def get_count(self, *args, **kwargs):
         pass
 
-    @only_versions(CASSANDRA_07_API_VERSION)
+    @only_versions(CASS_07)
     def multiget_count(self, *args, **kwargs):
         pass
 
@@ -185,7 +185,7 @@ class Connection(object):
     def get_range_slices(self, *args, **kwargs):
         pass
 
-    @only_versions(CASSANDRA_07_API_VERSION)
+    @only_versions(CASS_07)
     def get_indexed_slices(self, *args, **kwargs):
         pass
 
@@ -197,13 +197,13 @@ class Connection(object):
     def remove(self, *args, **kwargs):
         pass
 
-    @only_versions(CASSANDRA_07_API_VERSION)
+    @only_versions(CASS_07)
     def truncate(self, *args, **kwargs):
         pass
 
     def describe_keyspace(self, keyspace):
-        result = self.call_with_translation(self.client.describe_keyspace, False, keyspace)
-        if self.version == CASSANDRA_06_API_VERSION:
+        result = self._call_with_translation(self.client.describe_keyspace, False, keyspace)
+        if self.version == CASS_06:
             cf_defs = []
             for name, attrs in result.items():
                 cf_defs.append(pycassa.adapter06.CfDef(keyspace, name, **attrs))
@@ -212,37 +212,37 @@ class Connection(object):
             return result
 
     def describe_keyspaces(self):
-        result = self.call_with_translation(self.client.describe_keyspaces, False)
-        if self.version == CASSANDRA_06_API_VERSION:
+        result = self._call_with_translation(self.client.describe_keyspaces, False)
+        if self.version == CASS_06:
             return [pycassa.adapter06.KsDef(ks, []) for ks in result]
         else:
             return result
 
-    @only_versions(CASSANDRA_07_API_VERSION)
+    @only_versions(CASS_07)
     def system_add_keyspace(self, *args, **kwargs):
         pass
 
-    @only_versions(CASSANDRA_07_API_VERSION)
+    @only_versions(CASS_07)
     def system_update_keyspace(self, *args, **kwargs):
         pass
 
-    @only_versions(CASSANDRA_07_API_VERSION)
+    @only_versions(CASS_07)
     def system_drop_keyspace(self, *args, **kwargs):
         pass
 
-    @only_versions(CASSANDRA_07_API_VERSION)
+    @only_versions(CASS_07)
     def system_add_column_family(self, *args, **kwargs):
         pass
 
-    @only_versions(CASSANDRA_07_API_VERSION)
+    @only_versions(CASS_07)
     def system_update_column_family(self, *args, **kwargs):
         pass
 
-    @only_versions(CASSANDRA_07_API_VERSION)
+    @only_versions(CASS_07)
     def system_drop_column_family(self, *args, **kwargs):
         pass
 
-    @only_versions(CASSANDRA_07_API_VERSION)
+    @only_versions(CASS_07)
     def describe_schema_versions(self, *args, **kwargs):
         pass
 
@@ -250,7 +250,7 @@ class Connection(object):
     def describe_partitioner(self, *args, **kwargs):
         pass
 
-    @only_versions(CASSANDRA_07_API_VERSION)
+    @only_versions(CASS_07)
     def describe_snitch(self, *args, **kwargs):
         pass
 
@@ -287,7 +287,3 @@ def connect(keyspace, servers=None, framed_transport=True, timeout=None,
 def connect_thread_local(*args, **kwargs):
     """ Alias of :meth:`connect` """
     return connect(*args, **kwargs)
-
-
-    def __init__(self, why=None):
-        self.why = why
