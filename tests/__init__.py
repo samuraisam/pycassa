@@ -11,8 +11,6 @@ try:
         print conn.version
         raise SkipTest('Cassandra 0.7.x not found')
 except Exception, exc:
-        print exc
-        raise exc
         raise SkipTest()
 finally:
     if conn is not None:
