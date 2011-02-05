@@ -159,7 +159,8 @@ class CfDef(object):
 
 class KsDef(object):
 
-    def __init__(self, cf_defs):
+    def __init__(self, name, cf_defs):
+        self.name = name
         self.cf_defs = cf_defs
 
         self.replication_factor = None

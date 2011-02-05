@@ -93,31 +93,36 @@ class TestColumnFamily(unittest.TestCase):
 
         count = 0
         for (k,v) in cf.get_range(row_count=100, buffer_size=10):
-            assert_true(k in keys, 'key "%s" should be in keys' % k)
+            if len(v) > 0:
+                assert_true(k in keys, 'key "%s" should be in keys' % k)
             count += 1
         assert_equal(count, 100)
 
         count = 0
         for (k,v) in cf.get_range(row_count=100, buffer_size=1000):
-            assert_true(k in keys, 'key "%s" should be in keys' % k)
+            if len(v) > 0:
+                assert_true(k in keys, 'key "%s" should be in keys' % k)
             count += 1
         assert_equal(count, 100)
 
         count = 0
         for (k,v) in cf.get_range(row_count=100, buffer_size=150):
-            assert_true(k in keys, 'key "%s" should be in keys' % k)
+            if len(v) > 0:
+                assert_true(k in keys, 'key "%s" should be in keys' % k)
             count += 1
         assert_equal(count, 100)
 
         count = 0
         for (k,v) in cf.get_range(row_count=100, buffer_size=7):
-            assert_true(k in keys, 'key "%s" should be in keys' % k)
+            if len(v) > 0:
+                assert_true(k in keys, 'key "%s" should be in keys' % k)
             count += 1
         assert_equal(count, 100)
 
         count = 0
         for (k,v) in cf.get_range(row_count=100, buffer_size=2):
-            assert_true(k in keys, 'key "%s" should be in keys' % k)
+            if len(v) > 0:
+                assert_true(k in keys, 'key "%s" should be in keys' % k)
             count += 1
         assert_equal(count, 100)
 
@@ -127,51 +132,59 @@ class TestColumnFamily(unittest.TestCase):
 
         count = 0
         for (k,v) in cf.get_range(row_count=10000, buffer_size=2):
-            assert_true(k in keys, 'key "%s" should be in keys' % k)
-            count += 1
+            if len(v) > 0:
+                assert_true(k in keys, 'key "%s" should be in keys' % k)
+                count += 1
         assert_equal(count, 201)
 
         count = 0
         for (k,v) in cf.get_range(row_count=10000, buffer_size=7):
-            assert_true(k in keys, 'key "%s" should be in keys' % k)
-            count += 1
+            if len(v) > 0:
+                assert_true(k in keys, 'key "%s" should be in keys' % k)
+                count += 1
         assert_equal(count, 201)
 
         count = 0
         for (k,v) in cf.get_range(row_count=10000, buffer_size=200):
-            assert_true(k in keys, 'key "%s" should be in keys' % k)
-            count += 1
+            if len(v) > 0:
+                assert_true(k in keys, 'key "%s" should be in keys' % k)
+                count += 1
         assert_equal(count, 201)
 
         count = 0
         for (k,v) in cf.get_range(row_count=10000, buffer_size=10000):
-            assert_true(k in keys, 'key "%s" should be in keys' % k)
-            count += 1
+            if len(v) > 0:
+                assert_true(k in keys, 'key "%s" should be in keys' % k)
+                count += 1
         assert_equal(count, 201)
 
         # Don't give a row count
         count = 0
         for (k,v) in cf.get_range(buffer_size=2):
-            assert_true(k in keys, 'key "%s" should be in keys' % k)
-            count += 1
+            if len(v) > 0:
+                assert_true(k in keys, 'key "%s" should be in keys' % k)
+                count += 1
         assert_equal(count, 201)
 
         count = 0
         for (k,v) in cf.get_range(buffer_size=77):
-            assert_true(k in keys, 'key "%s" should be in keys' % k)
-            count += 1
+            if len(v) > 0:
+                assert_true(k in keys, 'key "%s" should be in keys' % k)
+                count += 1
         assert_equal(count, 201)
 
         count = 0
         for (k,v) in cf.get_range(buffer_size=200):
-            assert_true(k in keys, 'key "%s" should be in keys' % k)
-            count += 1
+            if len(v) > 0:
+                assert_true(k in keys, 'key "%s" should be in keys' % k)
+                count += 1
         assert_equal(count, 201)
 
         count = 0
         for (k,v) in cf.get_range(buffer_size=10000):
-            assert_true(k in keys, 'key "%s" should be in keys' % k)
-            count += 1
+            if len(v) > 0:
+                assert_true(k in keys, 'key "%s" should be in keys' % k)
+                count += 1
         assert_equal(count, 201)
 
         for key, columns in cf.get_range():

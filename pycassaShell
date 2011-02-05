@@ -253,7 +253,7 @@ if options.user or options.passwd:
         exit(1)
     credentials = {'username': options.user, 'password': options.passwd}
 
-SYSTEM_MANAGER = InteractiveSystemManager('%s:%d' % (hostname, port), credentials, framed, _update_cf)
+SYSTEM_MANAGER = InteractiveSystemManager('%s:%d' % (hostname, port), credentials, framed)
 
 print "----------------------------------"
 print "Cassandra Interactive Python Shell"

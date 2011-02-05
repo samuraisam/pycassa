@@ -146,9 +146,7 @@ class Mutator(object):
             else:
                 cos.column = self.adapter.Column(name=_pack_name(c), value=_pack_value(v, c),
                                                  timestamp=timestamp, ttl=ttl)
-            mut = self.adapter.Mutation(column_or_supercolumn=cos)
-            print mut
-            yield mut
+            yield self.adapter.Mutation(column_or_supercolumn=cos)
 
     def insert(self, column_family, key, columns, timestamp=None, ttl=None):
         """

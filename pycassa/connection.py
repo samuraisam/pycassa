@@ -1,4 +1,4 @@
-import socket
+import socket as real_socket
 import time
 
 from thrift import Thrift
@@ -36,7 +36,9 @@ class Connection(object):
         host = server[0]
         socket = TSocket.TSocket(host, port)
         if timeout is not None:
-            socket.setTimeout(timeout*1000.0)
+            socket.setTimeout(min(500, timeout*1000.0))
+        else:
+            socket.setTimeout(500)
         if framed_transport:
             self.transport = TTransport.TFramedTransport(socket)
         else:
@@ -54,7 +56,7 @@ class Connection(object):
                 self.client.login(request)
             self.version = int(self.client.describe_version().split('.', 1)[0])
             self.transport.close()
-        except Thrift.TApplicationException:
+        except (Thrift.TApplicationException, real_socket.error), exc:
             try06 = True
         finally:
             self.transport.close()
@@ -74,7 +76,7 @@ class Connection(object):
                 self.transport.open()
 
                 if credentials is not None:
-                    request = pycassa.cassandra07.ttypes.AuthenticationRequest(credentials=credentials)
+                    request = pycassa.cassandra06.ttypes.AuthenticationRequest(credentials=credentials)
                     self.client.login(keyspace, request)
                 self.version = int(self.client.describe_version().split('.', 1)[0])
             finally:
@@ -150,7 +152,7 @@ class Connection(object):
 
             def new_f(self, *args, **kwargs):
                 assert self.version in versions, \
-                        "This function is not available for the version of Cassandra in use"
+                        "The function %s is not available for the version of Cassandra in use" % old_f.__name__
                 func = getattr(self.client, old_f.__name__)
                 return self.call_with_translation(func, True, *args, **kwargs)
 
@@ -200,18 +202,21 @@ class Connection(object):
         pass
 
     def describe_keyspace(self, keyspace):
-        result = self.client.describe_keyspace(keyspace)
+        result = self.call_with_translation(self.client.describe_keyspace, False, keyspace)
         if self.version == CASSANDRA_06_API_VERSION:
             cf_defs = []
             for name, attrs in result.items():
                 cf_defs.append(pycassa.adapter06.CfDef(keyspace, name, **attrs))
-            return pycassa.adapter06.KsDef(cf_defs)
+            return pycassa.adapter06.KsDef(keyspace, cf_defs)
         else:
             return result
 
-    @cross_version(False)
-    def describe_keyspaces(self, *args, **kwargs):
-        pass
+    def describe_keyspaces(self):
+        result = self.call_with_translation(self.client.describe_keyspaces, False)
+        if self.version == CASSANDRA_06_API_VERSION:
+            return [pycassa.adapter06.KsDef(ks, []) for ks in result]
+        else:
+            return result
 
     @only_versions(CASSANDRA_07_API_VERSION)
     def system_add_keyspace(self, *args, **kwargs):
@@ -249,7 +254,7 @@ class Connection(object):
     def describe_snitch(self, *args, **kwargs):
         pass
 
-    @cross_version(True)
+    @cross_version(False)
     def describe_ring(self, *args, **kwargs):
         pass
 

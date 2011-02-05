@@ -32,15 +32,6 @@ class TestCFs(unittest.TestCase):
 
     @classmethod
     def setup_class(cls):
-        sys = SystemManager()
-        sys.create_column_family(TEST_KS, 'StdLong', comparator_type=LONG_TYPE)
-        sys.create_column_family(TEST_KS, 'StdTimeUUID', comparator_type=TIME_UUID_TYPE)
-        sys.create_column_family(TEST_KS, 'StdLexicalUUID', comparator_type=LEXICAL_UUID_TYPE)
-        sys.create_column_family(TEST_KS, 'StdAscii', comparator_type=ASCII_TYPE)
-        sys.create_column_family(TEST_KS, 'StdUTF8', comparator_type=UTF8_TYPE)
-        sys.create_column_family(TEST_KS, 'StdBytes', comparator_type=BYTES_TYPE)
-        sys.close()
-
         cls.cf_long  = ColumnFamily(pool, 'StdLong')
         cls.cf_time  = ColumnFamily(pool, 'StdTimeUUID')
         cls.cf_lex   = ColumnFamily(pool, 'StdLexicalUUID')
@@ -178,15 +169,6 @@ class TestSuperCFs(unittest.TestCase):
 
     @classmethod
     def setup_class(cls):
-        sys = SystemManager()
-        sys.create_column_family(TEST_KS, 'SuperLong', super=True, comparator_type=LONG_TYPE)
-        sys.create_column_family(TEST_KS, 'SuperTime', super=True, comparator_type=TIME_UUID_TYPE)
-        sys.create_column_family(TEST_KS, 'SuperLex', super=True, comparator_type=LEXICAL_UUID_TYPE)
-        sys.create_column_family(TEST_KS, 'SuperAscii', super=True, comparator_type=ASCII_TYPE)
-        sys.create_column_family(TEST_KS, 'SuperUTF8', super=True, comparator_type=UTF8_TYPE)
-        sys.create_column_family(TEST_KS, 'SuperBytes', super=True, comparator_type=BYTES_TYPE)
-        sys.close()
-
         cls.cf_suplong  = ColumnFamily(pool, 'SuperLong')
         cls.cf_suptime  = ColumnFamily(pool, 'SuperTime')
         cls.cf_suplex   = ColumnFamily(pool, 'SuperLex')
@@ -324,21 +306,6 @@ class TestSuperSubCFs(unittest.TestCase):
 
     @classmethod
     def setup_class(cls):
-        sys = SystemManager()
-        sys.create_column_family(TEST_KS, 'SuperLongSubLong', super=True,
-                                 comparator_type=LONG_TYPE, subcomparator_type=LONG_TYPE)
-        sys.create_column_family(TEST_KS, 'SuperLongSubTime', super=True,
-                                 comparator_type=LONG_TYPE, subcomparator_type=TIME_UUID_TYPE)
-        sys.create_column_family(TEST_KS, 'SuperLongSubLex', super=True,
-                                 comparator_type=LONG_TYPE, subcomparator_type=LEXICAL_UUID_TYPE)
-        sys.create_column_family(TEST_KS, 'SuperLongSubAscii', super=True,
-                                 comparator_type=LONG_TYPE, subcomparator_type=ASCII_TYPE)
-        sys.create_column_family(TEST_KS, 'SuperLongSubUTF8', super=True,
-                                 comparator_type=LONG_TYPE, subcomparator_type=UTF8_TYPE)
-        sys.create_column_family(TEST_KS, 'SuperLongSubBytes', super=True,
-                                 comparator_type=LONG_TYPE, subcomparator_type=BYTES_TYPE)
-        sys.close()
-
         cls.cf_suplong_sublong  = ColumnFamily(pool, 'SuperLongSubLong')
         cls.cf_suplong_subtime  = ColumnFamily(pool, 'SuperLongSubTime')
         cls.cf_suplong_sublex   = ColumnFamily(pool, 'SuperLongSubLex')

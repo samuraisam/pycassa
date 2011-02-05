@@ -17,13 +17,14 @@ def _get_list():
 class PoolingCase(unittest.TestCase):
 
     def tearDown(self):
-        pool = ConnectionPool('PycassaTestKeyspace')
+        pool = ConnectionPool('PycassaTestKeyspace', framed_transport=False)
         cf = ColumnFamily(pool, 'Standard1')
         for key, cols in cf.get_range():
             cf.remove(key)
 
     def test_basic_pools(self):
-        pool = ConnectionPool('PycassaTestKeyspace', credentials=_credentials)
+        pool = ConnectionPool('PycassaTestKeyspace', credentials=_credentials,
+                              framed_transport=False)
         pool.dispose()
         pool = pool.recreate()
         cf = ColumnFamily(pool, 'Standard1')
@@ -34,16 +35,18 @@ class PoolingCase(unittest.TestCase):
     def test_server_list_func(self):
         listener = _TestListener()
         pool = ConnectionPool('PycassaTestKeyspace', server_list=_get_list,
-                         listeners=[listener], prefill=False)
+                              listeners=[listener], prefill=False,
+                              framed_transport=False)
         assert_equal(listener.serv_list, ['127.0.0.1:9160'])
         assert_equal(listener.list_count, 1)
 
     def test_queue_pool(self):
         listener = _TestListener()
         pool = ConnectionPool(pool_size=5, max_overflow=5, recycle=10000,
-                         prefill=True, pool_timeout=0.5, timeout=1,
-                         keyspace='PycassaTestKeyspace', credentials=_credentials,
-                         listeners=[listener], use_threadlocal=False)
+                              prefill=True, pool_timeout=1, timeout=1,
+                              keyspace='PycassaTestKeyspace', credentials=_credentials,
+                              listeners=[listener], use_threadlocal=False,
+                              framed_transport=False)
 
         # One connection was opened for determining the Cassandra API version
         # on pool creation
@@ -98,7 +101,6 @@ class PoolingCase(unittest.TestCase):
         assert_equal(listener.checkin_count, 20)
         assert_equal(listener.close_count, 10)
 
-        print "in test:", id(conns[-1])
         assert_raises(InvalidRequestError, conns[-1].return_to_pool)
         assert_equal(listener.checkin_count, 20)
         assert_equal(listener.close_count, 10)
@@ -112,9 +114,10 @@ class PoolingCase(unittest.TestCase):
     def test_queue_pool_threadlocal(self):
         listener = _TestListener()
         pool = ConnectionPool(pool_size=5, max_overflow=5, recycle=10000,
-                         prefill=True, pool_timeout=0.5, timeout=1,
-                         keyspace='PycassaTestKeyspace', credentials=_credentials,
-                         listeners=[listener], use_threadlocal=True)
+                              prefill=True, pool_timeout=0.5, timeout=1,
+                              keyspace='PycassaTestKeyspace', credentials=_credentials,
+                              listeners=[listener], use_threadlocal=True,
+                              framed_transport=False)
 
         # One connection was opened for determining the Cassandra API version
         # on pool creation
@@ -182,9 +185,10 @@ class PoolingCase(unittest.TestCase):
     def test_queue_pool_recycle(self):
         listener = _TestListener()
         pool = ConnectionPool(pool_size=5, max_overflow=5, recycle=1,
-                         prefill=True, pool_timeout=0.5, timeout=1,
-                         keyspace='PycassaTestKeyspace', credentials=_credentials,
-                         listeners=[listener], use_threadlocal=False)
+                              prefill=True, pool_timeout=0.5, timeout=1,
+                              keyspace='PycassaTestKeyspace', credentials=_credentials,
+                              listeners=[listener], use_threadlocal=False,
+                              framed_transport=False)
 
         cf = ColumnFamily(pool, 'Standard1')
         columns = {'col1': 'val', 'col2': 'val'}
@@ -198,9 +202,10 @@ class PoolingCase(unittest.TestCase):
 
         # Try with threadlocal=True
         pool = ConnectionPool(pool_size=5, max_overflow=5, recycle=1,
-                         prefill=False, pool_timeout=0.5, timeout=1,
-                         keyspace='PycassaTestKeyspace', credentials=_credentials,
-                         listeners=[listener], use_threadlocal=True)
+                              prefill=False, pool_timeout=0.5, timeout=1,
+                              keyspace='PycassaTestKeyspace', credentials=_credentials,
+                              listeners=[listener], use_threadlocal=True,
+                              framed_transport=False)
 
         cf = ColumnFamily(pool, 'Standard1')
         for i in range(10):
@@ -221,11 +226,12 @@ class PoolingCase(unittest.TestCase):
                 return 1
 
         pool = ConnectionPool(pool_size=5, max_overflow=5, recycle=10000,
-                         prefill=True,
-                         keyspace='PycassaTestKeyspace', credentials=_credentials,
-                         timeout=0.2,
-                         listeners=[listener], use_threadlocal=False,
-                         server_list=['localhost:9160', 'foobar:1'])
+                              prefill=True,
+                              keyspace='PycassaTestKeyspace', credentials=_credentials,
+                              timeout=0.2,
+                              listeners=[listener], use_threadlocal=False,
+                              server_list=['localhost:9160', 'foobar:1'],
+                              framed_transport=False)
 
         assert_equal(listener.failure_count, 5 + get_extra())
 
@@ -238,11 +244,12 @@ class PoolingCase(unittest.TestCase):
         listener.reset()
 
         pool = ConnectionPool(pool_size=5, max_overflow=5, recycle=10000,
-                         prefill=True,
-                         keyspace='PycassaTestKeyspace', credentials=_credentials,
-                         timeout=0.05,
-                         listeners=[listener], use_threadlocal=True,
-                         server_list=['localhost:9160', 'foobar:1'])
+                              prefill=True,
+                              keyspace='PycassaTestKeyspace', credentials=_credentials,
+                              timeout=0.05,
+                              listeners=[listener], use_threadlocal=True,
+                              server_list=['localhost:9160', 'foobar:1'],
+                              framed_transport=False)
 
         assert_equal(listener.failure_count, 5 + get_extra())
 
@@ -267,10 +274,11 @@ def fail_once(self, *args, **kwargs):
     def test_queue_failover(self):
         listener = _TestListener()
         pool = ConnectionPool(pool_size=1, max_overflow=0, recycle=10000,
-                         prefill=True, timeout=1,
-                         keyspace='PycassaTestKeyspace', credentials=_credentials,
-                         listeners=[listener], use_threadlocal=False,
-                         server_list=['localhost:9160', 'localhost:9160'])
+                              prefill=True, timeout=1,
+                              keyspace='PycassaTestKeyspace', credentials=_credentials,
+                              listeners=[listener], use_threadlocal=False,
+                              server_list=['localhost:9160', 'localhost:9160'],
+                              framed_transport=False)
 
         cf = ColumnFamily(pool, 'Standard1')
 
@@ -292,10 +300,11 @@ def fail_once(self, *args, **kwargs):
     def test_queue_threadlocal_failover(self):
         listener = _TestListener()
         pool = ConnectionPool(pool_size=1, max_overflow=0, recycle=10000,
-                         prefill=True, timeout=0.05,
-                         keyspace='PycassaTestKeyspace', credentials=_credentials,
-                         listeners=[listener], use_threadlocal=True,
-                         server_list=['localhost:9160', 'localhost:9160'])
+                              prefill=True, timeout=0.05,
+                              keyspace='PycassaTestKeyspace', credentials=_credentials,
+                              listeners=[listener], use_threadlocal=True,
+                              server_list=['localhost:9160', 'localhost:9160'],
+                              framed_transport=False)
 
         cf = ColumnFamily(pool, 'Standard1')
 
@@ -316,10 +325,11 @@ def fail_once(self, *args, **kwargs):
         listener.reset()
 
         pool = ConnectionPool(pool_size=5, max_overflow=5, recycle=10000,
-                         prefill=True, timeout=0.05,
-                         keyspace='PycassaTestKeyspace', credentials=_credentials,
-                         listeners=[listener], use_threadlocal=True,
-                         server_list=['localhost:9160', 'localhost:9160'])
+                              prefill=True, timeout=0.05,
+                              keyspace='PycassaTestKeyspace', credentials=_credentials,
+                              listeners=[listener], use_threadlocal=True,
+                              server_list=['localhost:9160', 'localhost:9160'],
+                              framed_transport=False)
 
         cf = ColumnFamily(pool, 'Standard1')
 
@@ -345,10 +355,11 @@ def fail_once(self, *args, **kwargs):
     def test_queue_retry_limit(self):
         listener = _TestListener()
         pool = ConnectionPool(pool_size=5, max_overflow=5, recycle=10000,
-                         prefill=True, max_retries=3, # allow 3 retries
-                         keyspace='PycassaTestKeyspace', credentials=_credentials,
-                         listeners=[listener], use_threadlocal=False,
-                         server_list=['localhost:9160', 'localhost:9160'])
+                              prefill=True, max_retries=3, # allow 3 retries
+                              keyspace='PycassaTestKeyspace', credentials=_credentials,
+                              listeners=[listener], use_threadlocal=False,
+                              server_list=['localhost:9160', 'localhost:9160'],
+                              framed_transport=False)
 
         # Corrupt all of the connections
         for i in range(5):
@@ -367,10 +378,11 @@ def fail_once(self, *args, **kwargs):
     def test_queue_threadlocal_retry_limit(self):
         listener = _TestListener()
         pool = ConnectionPool(pool_size=5, max_overflow=5, recycle=10000,
-                         prefill=True, max_retries=3, # allow 3 retries
-                         keyspace='PycassaTestKeyspace', credentials=_credentials,
-                         listeners=[listener], use_threadlocal=True,
-                         server_list=['localhost:9160', 'localhost:9160'])
+                              prefill=True, max_retries=3, # allow 3 retries
+                              keyspace='PycassaTestKeyspace', credentials=_credentials,
+                              listeners=[listener], use_threadlocal=True,
+                              server_list=['localhost:9160', 'localhost:9160'],
+                              framed_transport=False)
 
         # Corrupt all of the connections
         for i in range(5):
