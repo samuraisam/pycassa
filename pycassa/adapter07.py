@@ -70,6 +70,15 @@ class CfAdapter(object):
         finally:
             self._release_connection()
 
+    def insert(self, key, col, value, timestamp, wcl, supercol=None, ttl=None):
+        column = Column(col, value, timestamp, ttl)
+        cp = ColumnParent(self.cf.column_family, supercol)
+        try:
+            self._obtain_connection()
+            return self._tlocal.client.insert(key, cp, column, wcl)
+        finally:
+            self._release_connection()
+
 class Column(parent.Column):
 
     def __init__(self, name, value, timestamp, ttl=None):
