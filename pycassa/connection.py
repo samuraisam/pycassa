@@ -48,16 +48,17 @@ class Connection(object):
         # Try 0.7 first
         try06 = False
         try:
-            self.client = pycassa.cassandra07.Cassandra.Client(protocol)
-            self.transport.open()
+            try:
+                self.client = pycassa.cassandra07.Cassandra.Client(protocol)
+                self.transport.open()
 
-            if credentials is not None:
-                request = pycassa.cassandra07.ttypes.AuthenticationRequest(credentials=credentials)
-                self.client.login(request)
-            self.version = int(self.client.describe_version().split('.', 1)[0])
-            self.transport.close()
-        except (Thrift.TApplicationException, real_socket.error), exc:
-            try06 = True
+                if credentials is not None:
+                    request = pycassa.cassandra07.ttypes.AuthenticationRequest(credentials=credentials)
+                    self.client.login(request)
+                self.version = int(self.client.describe_version().split('.', 1)[0])
+                self.transport.close()
+            except (Thrift.TApplicationException, real_socket.error), exc:
+                try06 = True
         finally:
             self.transport.close()
 
