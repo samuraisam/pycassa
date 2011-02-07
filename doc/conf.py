@@ -55,6 +55,8 @@ exclude_trees = ['_build']
 # unit titles (such as .. function::).
 add_module_names = True
 
+autodoc_member_order = 'bysource'
+
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
 

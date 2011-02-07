@@ -17,3 +17,6 @@
 
    .. automethod:: pycassa.index.create_index_clause(expr_list[, start_key][, count])
 
+   .. autoclass:: pycassa.index.IndexExpression
+
+   .. autoclass:: pycassa.index.IndexClause

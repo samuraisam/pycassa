@@ -48,31 +48,20 @@ LTE = 'LTE'
 
 def create_index_clause(expr_list, start_key='', count=100):
     """
-    Constructs an :class:`~pycassa.cassandra.ttypes.IndexClause` for use with
+    Constructs an :class:`IndexClause` for use with
     :meth:`~pycassa.columnfamily.get_indexed_slices()`
 
-    `expr_list` should be a list of :class:`~IndexExpression` objects that
-    must be matched for a row to be returned.  At least one of these expressions
-    must be on an indexed column.
-
-    Cassandra will only return matching rows with keys after `start_key`.  If this
-    is the empty string, all rows will be considered.  Keep in mind that this
-    is not as meaningful unless an OrderPreservingPartitioner is used.
-
-    The number of rows to return is limited by `count`, which defaults to 100.
-
+    .. deprecated:: 1.1.0
+       Create an :class:`IndexClause` directly instead.
     """
     return IndexClause(expr_list, start_key, count)
 
 def create_index_expression(column_name, value, op=EQ):
     """
-    Constructs an :class:`~IndexExpression` to use in an :class:`~IndexClause`.
+    Constructs an :class:`IndexExpression` to use in an :class:`IndexClause`.
 
-    The expression will be applied to the column with name `column_name`. A match
-    will only occur if the operator specified with `op` returns ``True`` when used
-    on the actual column value and the `value` parameter.
-
-    The default operator is :const:`~EQ`, which tests for equality.
+    .. deprecated:: 1.1.0
+       Create an :class:`IndexExpression` directly instead.
 
     """
     return IndexExpression(column_name, value, op)
@@ -80,6 +69,20 @@ def create_index_expression(column_name, value, op=EQ):
 class IndexClause(object):
 
     def __init__(self, expr_list, start_key, count):
+        """
+        Constructs an index clause for use with
+        :meth:`~pycassa.columnfamily.get_indexed_slices()`
+
+        `expr_list` should be a list of :class:`IndexExpression` objects that
+        must be matched for a row to be returned.  At least one of these expressions
+        must be on an indexed column.
+
+        Cassandra will only return matching rows with keys after `start_key`.  If this
+        is the empty string, all rows will be considered.  Keep in mind that this
+        is not as meaningful unless an OrderPreservingPartitioner is used.
+
+        The number of rows to return is limited by `count`, which defaults to 100.
+        """
         self.expressions = expr_list
         self.start_key = start_key
         self.count = count
@@ -87,6 +90,15 @@ class IndexClause(object):
 class IndexExpression(object):
 
     def __init__(self, column_name, value, op=EQ):
+        """
+        An index expression to be used in an :class:`IndexClause`.
+
+        The expression will be applied to the column with name `column_name`. A match
+        will only occur if the operator specified with `op` returns ``True`` when used
+        on the actual column value and the `value` parameter.
+
+        The default operator is :const:`~EQ`, which tests for equality.
+        """
         self.column_name = column_name
         self.value = value
         self.op = op

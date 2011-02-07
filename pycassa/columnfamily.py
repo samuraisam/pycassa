@@ -7,6 +7,7 @@ manipulation of data inside Cassandra.
 
 from pycassa.util import *
 from pycassa.api_exceptions import *
+from pycassa.consistency_level import ConsistencyLevel
 
 try:
     from functools import wraps
@@ -36,7 +37,7 @@ _SLICE_START = 1
 _SLICE_FINISH = 2
 
 def gm_timestamp():
-    """ Gets the current GMT timestamp as ``int(time.time() * 1e6``. """
+    """ Gets the current GMT timestamp in microseconds. """
     return int(time.time() * 1e6)
 
 
@@ -44,15 +45,16 @@ class ColumnFamily(object):
     """ An abstraction of a Cassandra column family or super column family. """
 
     def __init__(self, pool, column_family, buffer_size=1024,
-                 read_consistency_level=None,
-                 write_consistency_level=None,
-                 timestamp=gm_timestamp, super=False,
-                 dict_class=OrderedDict, autopack_names=True,
+                 read_consistency_level=ConsistencyLevel.ONE,
+                 write_consistency_level=ConsistencyLevel.ONE,
+                 timestamp=gm_timestamp,
+                 dict_class=OrderedDict,
+                 autopack_names=True,
                  autopack_values=True):
         """
         An abstraction of a Cassandra column family or super column family.
-        Operations on this, such as :meth:`get` or :meth:`insert` will get data from or
-        insert data into the corresponding Cassandra column family with
+        Operations on this, such as :meth:`get` or :meth:`insert` will get data
+        from or insert data into the corresponding Cassandra column family with
         name `column_family`.
 
         `pool` is a :class:`~pycassa.pool.ConnectionPool` that the column
@@ -69,10 +71,10 @@ class ColumnFamily(object):
         `read_consistency_level` and `write_consistency_level` set the default
         consistency levels for every operation; these may be overridden
         per-operation. These should be instances of
-        :class:`~pycassa.cassandra.ttypes.ConsistencyLevel`.  These default
+        :class:`~pycassa.consistency_level.ConsistencyLevel`.  These both default
         to level ``ONE``.
 
-        Each :meth:`insert()` or :meth:`remove` sends a timestamp with every
+        Each :meth:`insert()` or :meth:`remove()` sends a timestamp with every
         column. The `timestamp` parameter is a function that is used to get
         this timestamp when needed.  The default function is :meth:`gm_timestamp()`.
 
@@ -111,10 +113,8 @@ class ColumnFamily(object):
         self._cf_adapter = pool.adapter.CfAdapter(self)
         self._cf_adapter.load_type_map()
 
-        if read_consistency_level is None:
-            self.read_consistency_level = self._adapter.ConsistencyLevel.ONE
-        if write_consistency_level is None:
-            self.write_consistency_level = self._adapter.ConsistencyLevel.ONE
+        self.read_consistency_level = read_consistency_level
+        self.write_consistency_level = write_consistency_level
 
     def _convert_Column_to_base(self, column, include_timestamp):
         value = self._unpack_value(column.value, column.name)
@@ -404,8 +404,10 @@ class ColumnFamily(object):
         Note that Cassandra does not support secondary indexes or get_indexed_slices()
         for super column families.
 
-            .. seealso:: :meth:`~pycassa.index.create_index_clause()` and
-                         :meth:`~pycassa.index.create_index_expression()`
+        .. versionadded:: Cassandra 0.7.0
+
+        .. seealso:: :meth:`~pycassa.index.create_index_clause()` and
+                     :meth:`~pycassa.index.create_index_expression()`
 
         """
 
@@ -520,6 +522,9 @@ class ColumnFamily(object):
         using `super_column`.  If this is set, `columns`, `column_start`, and
         `column_finish` only apply to the subcolumns of `super_column`.
 
+        .. versionchanged:: Cassandra 0.7.0
+           The *column_start* and *column_finish* parameters were added.
+
         """
         cp = self._create_column_parent(super_column)
         sp = self._create_slice_predicate(columns, column_start, column_finish,
@@ -537,6 +542,8 @@ class ColumnFamily(object):
         The parameters are the same as for :meth:`get()`, except that a list
         of keys may be used. A dictionary of the form ``{key: int}`` is
         returned.
+
+        .. versionadded:: Cassandra 0.7.0
 
         """
 
@@ -732,6 +739,8 @@ class ColumnFamily(object):
         The operation succeeds only if all hosts in the cluster at available
         and will throw an :exc:`.UnavailableException` if some hosts are
         down.
+
+        .. versionadded:: Cassandra 0.7.0
 
         """
         try:
