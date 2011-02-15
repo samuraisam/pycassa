@@ -16,7 +16,7 @@ use_setuptools()
 from setuptools import setup
 from distutils.cmd import Command
 
-__version_info__ = (2, 0, '0-beta1')
+__version_info__ = (0, 0, '0-beta2')
 __version__ = '.'.join([str(v) for v in __version_info__])
 
 long_description = """pycassa is a python client library for Apache Cassandra with the following features:
@@ -85,7 +85,7 @@ setup(
       url = 'http://github.com/pycassa/pycassa',
       download_url = 'http://github.com/downloads/pycassa/pycassa/pycassa-%s.tar.gz' % __version__,
       keywords = 'cassandra client db distributed thrift',
-      packages = ['pycassa', 'pycassa.cassandra', 'pycassa.logging'],
+      packages = ['pycassa', 'pycassa.cassandra07', 'pycassa.cassandra06', 'pycassa.logging'],
       py_modules = ['ez_setup'],
       requires = ['thrift05'],
       scripts=['pycassaShell'],
