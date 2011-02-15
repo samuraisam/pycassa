@@ -284,11 +284,16 @@ def connect(keyspace, servers=None, framed_transport=True, timeout=None,
     """
     if servers is None:
         servers = [DEFAULT_SERVER]
-    return pool.ConnectionPool(keyspace=keyspace, server_list=servers,
-                               credentials=credentials, timeout=timeout,
-                               use_threadlocal=use_threadlocal, prefill=False,
-                               pool_size=len(servers), max_overflow=len(servers),
-                               max_retries=len(servers))
+    return pool.ConnectionPool(keyspace=keyspace,
+                               server_list=servers,
+                               credentials=credentials,
+                               timeout=timeout,
+                               use_threadlocal=use_threadlocal,
+                               prefill=False,
+                               pool_size=len(servers),
+                               max_overflow=len(servers),
+                               max_retries=len(servers),
+                               framed_transport=framed_transport)
 
 def connect_thread_local(*args, **kwargs):
     """ Alias of :meth:`connect` """
