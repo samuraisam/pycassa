@@ -273,12 +273,6 @@ print "Keyspace: %s" % options.keyspace
 print "Host: %s:%d" % (hostname, port)
 
 if options.keyspace:
-    import logging
-    log = pycassa.PycassaLogger()
-    log.set_logger_name('pycassa')
-    log.set_logger_level('debug')
-    log.get_logger().addHandler(logging.StreamHandler())
-
     _pool = pycassa.QueuePool(keyspace=options.keyspace,
                               server_list=['%s:%d' % (hostname, port)],
                               credentials=credentials,
