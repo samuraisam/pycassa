@@ -11,13 +11,21 @@ try:
 except:
     has_subprocess = False
 
-from ez_setup import use_setuptools
-use_setuptools()
-from setuptools import setup
+try:
+    from ez_setup import use_setuptools
+    use_setuptools()
+except ImportError:
+    pass
+
+try:
+    from setuptools import setup
+except ImportError:
+    from distutils.core import setup
+
 from distutils.cmd import Command
 
-__version_info__ = (1, 2, 0)
-__version__ = '.'.join([str(v) for v in __version_info__])
+import pycassa
+__version__ = '.'.join(map(str, pycassa.version))
 
 long_description = """pycassa is a python client library for Apache Cassandra with the following features:
 
@@ -91,6 +99,7 @@ setup(
                   'pycassa.cassandra.c08',
                   'pycassa.logging'],
       requires = ['thrift'],
+      py_modules=['ez_setup'],
       scripts=['pycassaShell'],
       cmdclass={"doc": doc},
       classifiers=[
